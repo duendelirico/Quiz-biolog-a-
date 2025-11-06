@@ -1,27 +1,173 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Prueba GitHub Pages</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz de Biología - Evolución</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
-      background-color: #1a1a1a;
-      color: #f0f0f0;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      background-color: #0f172a;
+      color: white;
+      transition: all 0.4s ease;
     }
-    h1 {
-      color: #7fff7f;
+    .fade {
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
-<body>
-  <h1>✅ ¡GitHub Pages funciona!</h1>
-  <p>Si ves este mensaje, tu sitio está activo.</p>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+  <!-- Pantalla de inicio -->
+  <div id="start-screen" class="fade text-center">
+    <h1 class="text-4xl font-bold mb-4">🧬 Quiz de Biología</h1>
+    <p class="text-lg text-gray-300 mb-6">Pon a prueba tus conocimientos sobre evolución y selección natural.</p>
+    <button onclick="startQuiz()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl">Comenzar Quiz</button>
+  </div>
+
+  <!-- Contenedor del quiz -->
+  <div id="quiz-container" class="hidden fade w-full max-w-xl bg-gray-800 rounded-2xl p-6 shadow-lg text-center">
+    <h1 class="text-3xl font-bold mb-4">🧠 Pregunta <span id="question-number"></span></h1>
+    <p id="timer" class="text-xl font-semibold text-yellow-400 mb-2">Tiempo: 20s</p>
+    <div id="question" class="text-lg mb-4 font-medium"></div>
+    <div id="answers" class="flex flex-col gap-3"></div>
+    <p id="feedback" class="mt-3 text-lg font-semibold"></p>
+  </div>
+
+  <!-- Pantalla de resultados -->
+  <div id="result" class="hidden fade mt-6 w-full max-w-xl bg-gray-800 p-6 rounded-2xl text-center shadow-lg">
+    <h2 class="text-2xl font-bold mb-4">📊 Resultados</h2>
+    <p id="score" class="text-lg mb-2"></p>
+    <h3 class="text-xl mt-3 font-semibold">Preguntas que debes repasar:</h3>
+    <ul id="wrong-questions" class="list-disc list-inside text-left mt-2 text-gray-300"></ul>
+    <button onclick="restartQuiz()" class="mt-5 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white">Reiniciar Quiz</button>
+  </div>
+
+  <script>
+    const questions = [
+      { q: "¿Qué estudia la anatomía comparada?", a: "Las similitudes y diferencias en la estructura de los seres vivos", o: ["El estudio de los fósiles", "Las moléculas del ADN"] },
+      { q: "¿Qué indica la presencia de órganos homólogos?", a: "Un antepasado común", o: ["Una evolución independiente", "Una función completamente nueva"] },
+      { q: "¿Qué son los órganos vestigiales?", a: "Órganos que han perdido su función", o: ["Órganos con funciones nuevas", "Órganos recién formados"] },
+      { q: "¿Qué son los fósiles vivientes?", a: "Especies actuales muy parecidas a las antiguas", o: ["Especies extinguidas recientemente", "Fósiles en formación"] },
+      { q: "¿Qué estudia la bioquímica en relación a la evolución?", a: "Las similitudes en biomoléculas entre especies", o: ["La estructura de los huesos", "El tamaño del cerebro"] },
+      { q: "¿Qué nos indica que dos embriones se parecen?", a: "Tienen un antepasado común cercano", o: ["Son especies sin relación", "Han evolucionado de forma independiente"] },
+      { q: "¿Qué estudia la biogeografía?", a: "La distribución de los seres vivos y sus fósiles", o: ["El comportamiento de los animales", "El ciclo de nutrientes"] },
+      { q: "¿Quién propuso la selección natural?", a: "Charles Darwin", o: ["Jean-Baptiste Lamarck", "Margulis"] },
+      { q: "Según Lamarck, ¿por qué cambian las especies?", a: "Por el uso y desuso de órganos", o: ["Por mutaciones aleatorias", "Por aislamiento geográfico"] },
+      { q: "¿Qué une el Neodarwinismo?", a: "La genética con la selección natural", o: ["La embriología con la anatomía", "La biogeografía con la paleontología"] },
+      { q: "¿Qué es una mutación?", a: "Un cambio en el material genético", o: ["Una adaptación física", "Una extinción natural"] },
+      { q: "¿Qué ocurre si una mutación mejora la supervivencia?", a: "Se perpetúa en la especie", o: ["Desaparece con el tiempo", "Provoca extinción"] },
+      { q: "¿Qué proceso puede generar nuevas especies?", a: "Mutación + Barrera geográfica + Selección natural", o: ["Competencia alimenticia", "Migración en grupo"] },
+      { q: "¿Qué propone Margulis con su teoría simbiógenética?", a: "Que nuevas especies surgen por fusión de genes", o: ["Que las mutaciones crean todas las especies", "Que la evolución se detuvo"] },
+      { q: "¿De qué proceden las mitocondrias?", a: "De bacterias asimiladas por células primitivas", o: ["De virus antiguos", "De mutaciones del ADN"] },
+      { q: "¿Qué significa hominización?", a: "El proceso evolutivo del ser humano", o: ["El desarrollo del lenguaje", "La evolución de los peces"] },
+      { q: "¿Qué rasgo caracteriza al bipedalismo?", a: "Caminar erguido sobre dos piernas", o: ["Usar herramientas", "Vivir en grupos"] },
+      { q: "¿Qué permitió el aumento de la capacidad craneal?", a: "Mayor sociabilidad e inteligencia", o: ["Cambio de hábitat", "Menor consumo energético"] },
+      { q: "¿Qué es la macroevolución?", a: "Evolución a gran escala que genera nuevas especies", o: ["Adaptaciones pequeñas", "Cambio genético puntual"] },
+      { q: "¿Qué es la microevolución?", a: "Adaptación rápida por necesidad de supervivencia", o: ["Extinción de especies", "Evolución en millones de años"] }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let wrongAnswers = [];
+    let timer;
+    let timeLeft = 20;
+    let shuffled = [];
+
+    function shuffleArray(arr) {
+      return arr.sort(() => Math.random() - 0.5);
+    }
+
+    function startQuiz() {
+      document.getElementById("start-screen").classList.add("hidden");
+      document.getElementById("quiz-container").classList.remove("hidden");
+      shuffled = shuffleArray([...questions]);
+      current = 0;
+      score = 0;
+      wrongAnswers = [];
+      showQuestion();
+    }
+
+    function showQuestion() {
+      if (current >= shuffled.length) return showResults();
+
+      const q = shuffled[current];
+      document.getElementById("feedback").textContent = "";
+      document.getElementById("question-number").textContent = `${current + 1} / ${shuffled.length}`;
+      document.getElementById("question").textContent = q.q;
+
+      const answersDiv = document.getElementById("answers");
+      answersDiv.innerHTML = "";
+
+      const options = shuffleArray([q.a, ...q.o]);
+      options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.className = "bg-blue-700 hover:bg-blue-600 py-2 rounded-xl text-white transition";
+        btn.onclick = () => checkAnswer(opt, q.a);
+        answersDiv.appendChild(btn);
+      });
+
+      timeLeft = 20;
+      updateTimer();
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        updateTimer();
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          wrongAnswers.push(q.q);
+          current++;
+          showQuestion();
+        }
+      }, 1000);
+    }
+
+    function updateTimer() {
+      document.getElementById("timer").textContent = "Tiempo: " + timeLeft + "s";
+    }
+
+    function checkAnswer(selected, correct) {
+      clearInterval(timer);
+      const feedback = document.getElementById("feedback");
+      if (selected === correct) {
+        feedback.textContent = "✅ ¡Correcto!";
+        feedback.className = "text-green-400 font-bold mt-3";
+        score++;
+      } else {
+        feedback.textContent = "❌ Incorrecto";
+        feedback.className = "text-red-400 font-bold mt-3";
+        wrongAnswers.push(shuffled[current].q);
+      }
+      setTimeout(() => {
+        current++;
+        showQuestion();
+      }, 1000);
+    }
+
+    function showResults() {
+      document.getElementById("quiz-container").classList.add("hidden");
+      document.getElementById("result").classList.remove("hidden");
+      document.getElementById("score").textContent = `Aciertos: ${score} / ${shuffled.length}`;
+      const list = document.getElementById("wrong-questions");
+      list.innerHTML = "";
+      wrongAnswers.forEach(q => {
+        const li = document.createElement("li");
+        li.textContent = q;
+        list.appendChild(li);
+      });
+    }
+
+    function restartQuiz() {
+      document.getElementById("result").classList.add("hidden");
+      document.getElementById("quiz-container").classList.remove("hidden");
+      startQuiz();
+    }
+  </script>
 </body>
-</html>
+  </html>
+  
